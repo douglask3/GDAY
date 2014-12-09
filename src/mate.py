@@ -76,7 +76,7 @@ class MateC3(object):
         # Plant respiration assuming carbon-use efficiency.
         self.fluxes.auto_resp = self.fluxes.gpp - self.fluxes.npp
     
-    def calculate_instant_photosynthesis(self,day,daylen):
+    def calculate_instant_photosynthesis(self,day,daylen,lai=self.state.lai):
         """ Photosynthesis is calculated assuming GPP is proportional to APAR,
         a commonly assumed reln (e.g. Potter 1993, Myneni 2002). The slope of
         relationship btw GPP and APAR, i.e. LUE is modelled using the
@@ -113,7 +113,7 @@ class MateC3(object):
         (Tk_am, Tk_pm, par, vpd_am, vpd_pm, ca) = self.get_met_data(day)
         
         # calculate mate params & account for temperature dependencies
-        N0 = self.calculate_top_of_canopy_n()
+        N0 = self.calculate_top_of_canopy_n(lai)
         
         gamma_star_am = self.calculate_co2_compensation_point(Tk_am)
         gamma_star_pm = self.calculate_co2_compensation_point(Tk_pm)
@@ -283,7 +283,7 @@ class MateC3(object):
         return Kc * (1.0 + self.params.oi / Ko)
        
                 
-    def calculate_top_of_canopy_n(self):  
+    def calculate_top_of_canopy_n(self,lai=self.state.lai):  
         """ Calculate the canopy N at the top of the canopy (g N m-2), N0.
         See notes and Chen et al 93, Oecologia, 93,63-69. 
         
@@ -295,7 +295,7 @@ class MateC3(object):
         if float_gt(self.state.lai, 0.0):
             # calculation for canopy N content at the top of the canopy                   
             N0 = (self.state.ncontent * self.params.kext /
-                 (1.0 - exp(-self.params.kext * self.state.lai)))
+                 (1.0 - exp(-self.params.kext * lai)))
         else:
             N0 = 0.0
         return N0

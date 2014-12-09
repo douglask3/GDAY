@@ -56,9 +56,13 @@ class MateC3(object):
         self.met_data = met_data
         self.mt = self.params.measurement_temp + const.DEG_TO_KELVIN      
         
-    def calculate_photosynthesis(self, day, daylen):
+    def calculate_photosynthesis(self, day, daylen, lai = None, fipar = None):
+    
+        if lai   is None: lai   = self.state.lai
+        if fipar is None: fipar = self.state.fipar
+        
         (self.fluxes.apar,self.fluxes.gpp_gCm2,self.fluxes.gpp_am,
-         self.fluxes.gpp_pm) = self.calculate_instant_photosynthesis(day,daylen)
+         self.fluxes.gpp_pm) = self.calculate_instant_photosynthesis(day,daylen,lai,fipar)
         
         self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
         self.fluxes.gpp_am_pm = [self.fluxes.gpp_am, self.fluxes.gpp_pm]
@@ -76,7 +80,7 @@ class MateC3(object):
         # Plant respiration assuming carbon-use efficiency.
         self.fluxes.auto_resp = self.fluxes.gpp - self.fluxes.npp
     
-    def calculate_instant_photosynthesis(self,day,daylen,lai=self.state.lai):
+    def calculate_instant_photosynthesis(self, day, daylen,lai,fipar):
         """ Photosynthesis is calculated assuming GPP is proportional to APAR,
         a commonly assumed reln (e.g. Potter 1993, Myneni 2002). The slope of
         relationship btw GPP and APAR, i.e. LUE is modelled using the
@@ -109,6 +113,7 @@ class MateC3(object):
         Nothing
             Method calculates GPP, NPP and Ra.
         """
+        
         # local var for tidyness
         (Tk_am, Tk_pm, par, vpd_am, vpd_pm, ca) = self.get_met_data(day)
         
@@ -155,7 +160,7 @@ class MateC3(object):
             apar = 0.0
         else:
             # absorbed photosynthetically active radiation (umol m-2 s-1)
-            apar = par * self.state.fipar
+            apar = par * fipar
         apar_half_day = apar / 2.0
                 
         # convert umol m-2 d-1 -> gC m-2 d-1
@@ -283,7 +288,8 @@ class MateC3(object):
         return Kc * (1.0 + self.params.oi / Ko)
        
                 
-    def calculate_top_of_canopy_n(self,lai=self.state.lai):  
+    def calculate_top_of_canopy_n(self,lai = None): 
+        if lai is None: lai = self.state.lai
         """ Calculate the canopy N at the top of the canopy (g N m-2), N0.
         See notes and Chen et al 93, Oecologia, 93,63-69. 
         

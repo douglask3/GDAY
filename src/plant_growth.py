@@ -10,6 +10,7 @@ from bewdy import Bewdy
 from water_balance import WaterBalance, SoilMoisture
 from mate import MateC3, MateC4
 from optimal_root_model import RootingDepthModel
+from scipy import optimize as optimize
 
 __author__  = "Martin De Kauwe"
 __version__ = "1.0 (23.02.2011)"
@@ -118,7 +119,7 @@ class PlantGrowth(object):
         # figure out the C allocation fractions 
         if not self.control.deciduous_model:
             # daily allocation...
-            self.calc_carbon_allocation_fracs(nitfac)
+            self.calc_carbon_allocation_fracs(nitfac, project_day, daylen)
         else:
             # Allocation is annually for deciduous "tree" model, but we need to 
             # keep a check on stresses during the growing season and the LAI
@@ -238,7 +239,16 @@ class PlantGrowth(object):
         
         return (ncbnew, nccnew, ncwimm, ncwnew)
 
-    def carbon_production(self, project_day, daylen):
+    #def carbon_production(self, project_day, daylen):
+     #   (self.state.ncontent,
+    #     self.state.fipar,
+     #    self.state.wtfac_topsoil, 
+     #    self.state.wtfac_root)=self.instant_carbon_production(project_day,daylen)
+        
+        
+    def carbon_production(self, project_day, daylen, lai = None, optimize = False):
+    
+        if lai is None : lai=self.state.lai
         """ Calculate GPP, NPP and plant respiration
 
         Parameters:
@@ -253,31 +263,30 @@ class PlantGrowth(object):
         * Jackson, J. E. and Palmer, J. W. (1981) Annals of Botany, 47, 561-565.
         """
 
-        if self.state.lai > 0.0:
+        if lai > 0.0:
             # average leaf nitrogen content (g N m-2 leaf)
             leafn = (self.state.shootnc * self.params.cfracts /
                      self.params.sla * const.KG_AS_G)
             # total nitrogen content of the canopy
-            self.state.ncontent = leafn * self.state.lai
+            ncontent = leafn * lai
         else:
-            self.state.ncontent = 0.0
+            ncontent = 0.0
          
         # When canopy is not closed, canopy light interception is reduced        
         # - calculate the fractional ground cover
-        if float_lt(self.state.lai, self.params.lai_closed):    
+        if float_lt(lai, self.params.lai_closed):    
             # discontinuous canopies
-            fc = self.state.lai / self.params.lai_closed
+            fc = lai / self.params.lai_closed
         else:
             fc = 1.0
        
         # fIPAR - the fraction of intercepted PAR = IPAR/PAR incident at the 
         # top of the canopy, accounting for partial closure based on Jackson
         # and Palmer (1979).
-        if self.state.lai > 0.0:
-            self.state.fipar = ((1.0 - exp(-self.params.kext * 
-                                            self.state.lai / fc)) * fc)
+        if lai > 0.0:
+            fipar = ((1.0 - exp(-self.params.kext *  lai / fc)) * fc)
         else:
-            self.state.fipar = 0.0
+            fipar = 0.0
         
         # Canopy extinction coefficient if the canopy is open
         #if cf < 1.0:
@@ -286,22 +295,30 @@ class PlantGrowth(object):
         if self.control.water_stress:
             # Calculate the soil moisture availability factors [0,1] in the 
             # topsoil and the entire root zone
-            (self.state.wtfac_topsoil, 
-             self.state.wtfac_root) = self.sm.calculate_soil_water_fac()
+            (wtfac_topsoil,wtfac_root) = self.sm.calculate_soil_water_fac()
         else:
             # really this should only be a debugging option!
-            self.state.wtfac_tsoil = 1.0
-            self.state.wtfac_root = 1.0
+            wtfac_tsoil = 1.0
+            wtfac_root = 1.0
        
         # Estimate photosynthesis 
-        if self.control.assim_model == "BEWDY":
-            self.bw.calculate_photosynthesis(frac_gcover, project_day, daylen)
-        elif self.control.assim_model == "MATE":
-            self.mt.calculate_photosynthesis(project_day, daylen)
+        if optimize:
+            return( self.mt.calculate_instant_photosynthesis(project_day, daylen,
+                                                             lai, fipar)[2] )
         else:
-            raise AttributeError('Unknown assimilation model')
+            self.state.ncontent         = ncontent
+            self.state.fipar            = fipar
+            self.state.wtfac_topsoil    = wtfac_topsoil
+            self.state.wtfac_root       = wtfac_root
+            
+            if self.control.assim_model == "BEWDY":
+                self.bw.calculate_photosynthesis(frac_gcover, project_day, daylen)
+            elif self.control.assim_model == "MATE":
+                self.mt.calculate_photosynthesis(project_day, daylen,lai,fipar)
+            else:
+                raise AttributeError('Unknown assimilation model')
     
-    def calc_carbon_allocation_fracs(self, nitfac):
+    def calc_carbon_allocation_fracs(self, nitfac, project_day, daylen):
         """Carbon allocation fractions to move photosynthate through the plant.
 
         Parameters:
@@ -370,28 +387,14 @@ class PlantGrowth(object):
             self.fluxes.alcroot = 0.0
             self.fluxes.alleaf = (1.0 - self.fluxes.alroot)
             
-        elif self.control.alloc_model == "ALLOMETRIC":
+        elif (self.control.alloc_model == "ALLOMETRIC" or
+             self.control.alloc_model == "MAXIMIZEGPP"):
             
             if not self.control.deciduous_model:
                 self.calculate_growth_stress_limitation()
             else:
                 # reset the buffer at the end of the growing season
                 self.sma.reset_stream()
-            
-            #
-            ## Commented out using functional balance below.
-            #
-               
-            # figure out root allocation given available water & nutrients
-            # hyperbola shape to allocation
-            #min_root_alloc = 0.05
-            #min_leaf_alloc = 0.05
-            #self.fluxes.alroot = (self.params.c_alloc_rmax * 
-            #                      min_root_alloc / 
-            #                     (min_root_alloc + 
-            #                     (self.params.c_alloc_rmax - 
-            #                      min_root_alloc) * 
-            #                      self.state.prev_sma))
             
             
             # Calculate tree height: allometric reln using the power function 
@@ -427,12 +430,19 @@ class PlantGrowth(object):
                 arg3 = self.state.canht - self.params.height0
                 arg4 = self.params.height1 - self.params.height0
                 leaf2sa_target = arg1 + (arg2 * arg3 / arg4) 
-                
+            
             self.fluxes.alleaf = self.alloc_goal_seek(leaf2sap, leaf2sa_target, 
                                                       self.params.c_alloc_fmax, 
                                                       self.params.targ_sens) 
-            
-            
+                                                      
+            if self.control.alloc_model == "MAXIMIZEGPP":
+                self.fluxes.alleaf = optimize.minimize(self.alloc_maximizeGPP,
+                                                       self.fluxes.alleaf,
+                                                       args=(project_day, daylen),
+                                                       bounds=((0,self.params.c_alloc_fmax),))['x'][0]
+                                                          
+                
+            print(self.fluxes.alleaf)
             # Maintain functional balance between leaf and root biomass
             #   e.g. -> Sitch et al. 2003, GCB.
             # assume root alloc = leaf alloc (derived from target) as starting
@@ -469,8 +479,6 @@ class PlantGrowth(object):
                 self.fluxes.alroot = max(min_root_alloc, 
                                          min(self.params.c_alloc_rmax, adj))
                 self.fluxes.alleaf += orig_ar - self.fluxes.alroot
-            #print mis_match, self.fluxes.alleaf, \
-            # self.fluxes.alstem+self.fluxes.albranch, self.fluxes.alroot
             
             
             # Allocation to branch dependent on relationship between the stem
@@ -494,13 +502,6 @@ class PlantGrowth(object):
                                         self.fluxes.alleaf -
                                         self.fluxes.alcroot)
             
-            
-            # allocation to stem is the residual
-            #self.fluxes.alstem = (1.0 - self.fluxes.alroot - 
-            #                            self.fluxes.albranch - 
-            #                            self.fluxes.alleaf)
-            #self.fluxes.alcroot = 0.2 * self.fluxes.alstem
-            #self.fluxes.alstem -= self.fluxes.alcroot
             
             # Because I have allowed the max fracs sum > 1, possibility
             # stem frac would be negative. Perhaps the above shouldn't be 
@@ -544,6 +545,13 @@ class PlantGrowth(object):
         
         return max(0.0, alloc_max * min(1.0, frac))    
     
+    def alloc_maximizeGPP(self, allFrac, project_day, daylen):
+        cIncr = self.fluxes.npp * allFrac
+        lai   = self.state.lai + self.leafIncrement(cIncr)
+        gpp   = self.carbon_production(project_day, daylen,lai,True)
+        
+        return(-gpp)
+        
     
     def calculate_growth_stress_limitation(self):
         """ Calculate level of stress due to nitrogen or water availability """
@@ -763,13 +771,7 @@ class PlantGrowth(object):
                 if float_eq(self.state.shoot, 0.0):
                     lai_inc = 0.0
                 else:
-                    lai_inc = (self.fluxes.cpleaf * 
-                              (self.params.sla * const.M2_AS_HA / 
-                              (const.KG_AS_TONNES * self.params.cfracts)) -
-                              (self.fluxes.deadleaves + 
-                               self.fluxes.ceaten) *
-                               self.state.lai / self.state.shoot)
-                
+                    lai_inc = self.leafIncrement()
                 
                 self.fluxes.npp *= (ntot / (self.fluxes.npstemimm +
                                     self.fluxes.npstemmob + 
@@ -843,6 +845,14 @@ class PlantGrowth(object):
             self.fluxes.nproot = ntot - self.fluxes.npleaf
             
         return recalc_wb 
+    
+    def leafIncrement(self,cpleaf=None):
+        if cpleaf is None: cpleaf=self.fluxes.cpleaf
+        return (cpleaf * (self.params.sla * const.M2_AS_HA / 
+                (const.KG_AS_TONNES * self.params.cfracts)) -
+                (self.fluxes.deadleaves + self.fluxes.ceaten) *
+                 self.state.lai / self.state.shoot)
+    
         
     def nitrogen_retrans(self, fdecay, rdecay, doy):
         """ Nitrogen retranslocated from senesced plant matter.

@@ -52,7 +52,7 @@ def main(experiment_id, site, treatment, ascii=True):
                          
                          
                          # control
-                         "alloc_model": "fixed",
+                         "alloc_model": "maximizeGPP",
                          "assim_model": "mate",
                          "calc_sw_params": "1",   #0 uses fwp values, 1= derive them
                          "deciduous_model": "false",

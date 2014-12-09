@@ -5,5 +5,5 @@ cd ..
 sudo make clean
 sudo make install
 cd $HERE
-python example_ascii.py
+python example.py
 

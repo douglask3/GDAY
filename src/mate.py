@@ -57,6 +57,26 @@ class MateC3(object):
         self.mt = self.params.measurement_temp + const.DEG_TO_KELVIN      
         
     def calculate_photosynthesis(self, day, daylen):
+        (self.fluxes.apar,self.fluxes.gpp_gCm2,self.fluxes.gpp_am,
+         self.fluxes.gpp_pm) = self.calculate_instant_photosynthesis(day,daylen)
+        
+        self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
+        self.fluxes.gpp_am_pm = [self.fluxes.gpp_am, self.fluxes.gpp_pm]
+        
+        if self.control.nuptake_model == 3:
+            self.fluxes.gpp_gCm2 *= self.params.ac
+            self.fluxes.gpp_am *= self.params.ac
+            self.fluxes.gpp_pm *= self.params.ac
+            self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
+            
+        # g C m-2 to tonnes hectare-1 day-1
+        self.fluxes.gpp = self.fluxes.gpp_gCm2 * const.GRAM_C_2_TONNES_HA
+        self.fluxes.npp = self.fluxes.npp_gCm2 * const.GRAM_C_2_TONNES_HA
+        
+        # Plant respiration assuming carbon-use efficiency.
+        self.fluxes.auto_resp = self.fluxes.gpp - self.fluxes.npp
+    
+    def calculate_instant_photosynthesis(self,day,daylen):
         """ Photosynthesis is calculated assuming GPP is proportional to APAR,
         a commonly assumed reln (e.g. Potter 1993, Myneni 2002). The slope of
         relationship btw GPP and APAR, i.e. LUE is modelled using the
@@ -132,34 +152,20 @@ class MateC3(object):
         lue_avg = (lue_am + lue_pm) / 2.0 
         
         if float_eq(self.state.lai, 0.0):
-            self.fluxes.apar = 0.0
+            apar = 0.0
         else:
             # absorbed photosynthetically active radiation (umol m-2 s-1)
-            self.fluxes.apar = par * self.state.fipar
-        apar_half_day = self.fluxes.apar / 2.0
+            apar = par * self.state.fipar
+        apar_half_day = apar / 2.0
                 
         # convert umol m-2 d-1 -> gC m-2 d-1
-        self.fluxes.gpp_gCm2 = self.fluxes.apar * lue_avg * const.UMOL_2_GRAMS_C
-        self.fluxes.gpp_am = apar_half_day * lue_am * const.UMOL_2_GRAMS_C
-        self.fluxes.gpp_pm = apar_half_day * lue_pm * const.UMOL_2_GRAMS_C
-        self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
+        gpp_gCm2 = apar * lue_avg * const.UMOL_2_GRAMS_C
+        gpp_am = apar_half_day * lue_am * const.UMOL_2_GRAMS_C
+        gpp_pm = apar_half_day * lue_pm * const.UMOL_2_GRAMS_C
         
-        
-        self.fluxes.gpp_am_pm = [self.fluxes.gpp_am, self.fluxes.gpp_pm]
-        
-        if self.control.nuptake_model == 3:
-            self.fluxes.gpp_gCm2 *= self.params.ac
-            self.fluxes.gpp_am *= self.params.ac
-            self.fluxes.gpp_pm *= self.params.ac
-            self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
-            
-        # g C m-2 to tonnes hectare-1 day-1
-        self.fluxes.gpp = self.fluxes.gpp_gCm2 * const.GRAM_C_2_TONNES_HA
-        self.fluxes.npp = self.fluxes.npp_gCm2 * const.GRAM_C_2_TONNES_HA
-        
-        # Plant respiration assuming carbon-use efficiency.
-        self.fluxes.auto_resp = self.fluxes.gpp - self.fluxes.npp
-
+        return(apar,gpp_gCm2,gpp_am,gpp_pm)
+    
+    
     def get_met_data(self, day):
         """ Grab the days met data out of the structure and return day values.
 

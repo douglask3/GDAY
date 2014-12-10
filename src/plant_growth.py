@@ -304,7 +304,7 @@ class PlantGrowth(object):
         # Estimate photosynthesis 
         if optimize:
             return( self.mt.calculate_instant_photosynthesis(project_day, daylen,
-                                                             lai, fipar)[2] )
+                                                             lai, fipar)[2], wtfac_root )
         else:
             self.state.ncontent         = ncontent
             self.state.fipar            = fipar
@@ -441,7 +441,6 @@ class PlantGrowth(object):
                                                        args=(project_day, daylen),
                                                        bounds=((0,0.9),))['x'][0]
                                                           
-            
             # Maintain functional balance between leaf and root biomass
             #   e.g. -> Sitch et al. 2003, GCB.
             # assume root alloc = leaf alloc (derived from target) as starting
@@ -553,14 +552,16 @@ class PlantGrowth(object):
     
     def alloc_maximizeGPP(self, allFrac, project_day, daylen):
         
-        gpp0  = self.carbon_production(project_day, daylen,self.state.lai,True)
+        (gpp0, wtfac_root0)  = self.carbon_production(project_day, daylen,self.state.lai,True)
         cIncr = self.fluxes.npp * allFrac
         lai   = self.state.lai + self.leafIncrement(cIncr)
         
-        gpp   = self.carbon_production(project_day, daylen,lai,True)
-        
+        (gpp, wtfac_root)   = self.carbon_production(project_day, daylen,lai,True)
+
         gpp  -= gpp0
-        return(-(gpp*(1-allFrac)))
+        if wtfac_root != wtfac_root0: gpp=0
+        
+        return( - (gpp))# * ( 1 - allFrac) ) )
         
     
     def calculate_growth_stress_limitation(self):

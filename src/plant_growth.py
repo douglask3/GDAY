@@ -300,7 +300,20 @@ class PlantGrowth(object):
             self.mt.calculate_photosynthesis(project_day, daylen)
         else:
             raise AttributeError('Unknown assimilation model')
-    
+        
+        # Calculate plant respiration
+        if self.control.respiration_model == "FIXED":
+            # Plant respiration assuming carbon-use efficiency.
+            self.fluxes.auto_resp = self.fluxes.gpp * self.params.cue
+        elif self.control.respiration_model == "TEMPERATURE":
+            raise RuntimeError, "Not implemented yet" 
+        elif self.control.respiration_model == "BIOMASS":
+            raise RuntimeError, "Not implemented yet" 
+        
+        # Calculate NPP
+        self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
+        self.fluxes.npp = self.fluxes.npp_gCm2 * const.GRAM_C_2_TONNES_HA
+        
     def calc_carbon_allocation_fracs(self, nitfac):
         """Carbon allocation fractions to move photosynthate through the plant.
 
@@ -454,7 +467,8 @@ class PlantGrowth(object):
             # stress
             #
             # calculate imbalance, based on *biomass*
-            mis_match = self.state.shoot / (self.state.root / stress)
+            mis_match = self.state.shoot / (self.state.root * stress)
+            
             # reduce leaf allocation fraction
             if mis_match > 1.0:
                 orig_af = self.fluxes.alleaf

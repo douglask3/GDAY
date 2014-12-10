@@ -154,9 +154,11 @@ class PrintOutput(object):
                    'modeljm', 'passiveconst', 'print_options', 'water_stress',\
                    'calc_sw_params', 'alloc_model','fixed_stem_nc', \
                    'ps_pathway','gs_model','grazing','exudation',\
-                   'ncycle','adjust_rtslow']
-
-        self.dump_ini_data("[files]\n", self.files, ignore, special, oparams,
+                   'ncycle','adjust_rtslow', "respiration_model"]
+        
+        self.dump_ini_data("[git]\n", None, ignore, special, 
+                            oparams, print_tag=False, print_files=False, git=True)
+        self.dump_ini_data("\n[files]\n", self.files, ignore, special, oparams,
                             print_tag=False, print_files=True)
         self.dump_ini_data("\n[params]\n", self.params, ignore, special,oparams,
                             print_tag=False, print_files=False)
@@ -169,7 +171,7 @@ class PrintOutput(object):
 
     def dump_ini_data(self, ini_section_tag, obj, ignore, special, fp,
                         print_tag=False,
-                        print_files=False):
+                        print_files=False, git=False):
         """ Get user class attributes and exclude builitin attributes
         Returns a list
 
@@ -193,21 +195,24 @@ class PrintOutput(object):
             data = [i for i in dir(obj) if not i.startswith('__') \
                     and i not in ignore]
             data.sort()
-
-            if print_tag == False and print_files == False:
+            
+            if print_tag == False and print_files == False and git == False:
                 for i in data:
                     fp.writelines("%s = %s\n" % (i, getattr(obj, i)))
-            elif print_tag == False and print_files == True:
+            elif print_tag == False and print_files == False and git == True:
+                fp.writelines('%s = %s\n' % ("git_hash", self.revision_code))
+            elif print_tag == False and print_files == True and git == False:
                 fp.writelines('%s = %s\n' % (i, getattr(obj, i)) for i in data)
-            elif print_tag == True and print_files == False:
+            elif print_tag == True and print_files == False and git == False:
                 fp.writelines('%s = %s\n' % (i, "yes") for i in obj)
+            
         except IOError:
             raise IOError("Error writing params file")
 
     def write_daily_output_header(self):
         
         if self.control.output_ascii:
-            self.wr.writerow(["%s:%s" % ("#Git_revision_code", self.revision_code)])
+            self.wr.writerow(["%s:%s" % ("#Git_revision_code", self.revision_code.replace(" ", ""))])
             header = []
             header.extend(["year","doy"])
             header.extend(["%s" % (var) for var in self.print_state])

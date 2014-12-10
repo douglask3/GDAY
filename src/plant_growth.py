@@ -439,7 +439,7 @@ class PlantGrowth(object):
                 self.fluxes.alleaf = optimize.minimize(self.alloc_maximizeGPP,
                                                        self.fluxes.alleaf,
                                                        args=(project_day, daylen),
-                                                       bounds=((0,self.params.c_alloc_fmax),))['x'][0]
+                                                       bounds=((0,0.9),))['x'][0]
                                                           
                 
             print(self.fluxes.alleaf)

@@ -441,8 +441,7 @@ class PlantGrowth(object):
                                                        args=(project_day, daylen),
                                                        bounds=((0,0.9),))['x'][0]
                                                           
-                
-            print(self.fluxes.alleaf)
+            
             # Maintain functional balance between leaf and root biomass
             #   e.g. -> Sitch et al. 2003, GCB.
             # assume root alloc = leaf alloc (derived from target) as starting
@@ -553,11 +552,15 @@ class PlantGrowth(object):
         return max(0.0, alloc_max * min(1.0, frac))    
     
     def alloc_maximizeGPP(self, allFrac, project_day, daylen):
+        
+        gpp0  = self.carbon_production(project_day, daylen,self.state.lai,True)
         cIncr = self.fluxes.npp * allFrac
         lai   = self.state.lai + self.leafIncrement(cIncr)
+        
         gpp   = self.carbon_production(project_day, daylen,lai,True)
         
-        return(-gpp)
+        gpp  -= gpp0
+        return(-(gpp*(1-allFrac)))
         
     
     def calculate_growth_stress_limitation(self):

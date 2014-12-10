@@ -485,24 +485,31 @@ class PlantGrowth(object):
             # and branch
             target_branch = (self.params.branch0 * 
                              self.state.stem**self.params.branch1)
-            self.fluxes.albranch = self.alloc_goal_seek(self.state.branch, 
-                                                       target_branch, 
-                                                       self.params.c_alloc_bmax, 
-                                                       self.params.targ_sens) 
+                             
+            if self.control.alloc_model == "ALLOMETRIC":
+                self.fluxes.albranch = self.alloc_goal_seek(self.state.branch, 
+                                                            target_branch, 
+                                                            self.params.c_alloc_bmax, 
+                                                            self.params.targ_sens) 
             
-            coarse_root_target = (self.params.croot0 * 
-                                  self.state.stem**self.params.croot1)
-            self.fluxes.alcroot = self.alloc_goal_seek(self.state.croot, 
-                                                       coarse_root_target, 
-                                                       self.params.c_alloc_cmax, 
-                                                       self.params.targ_sens) 
+                coarse_root_target = (self.params.croot0 * 
+                                      self.state.stem**self.params.croot1)
+                self.fluxes.alcroot = self.alloc_goal_seek(self.state.croot, 
+                                                           coarse_root_target, 
+                                                           self.params.c_alloc_cmax, 
+                                                           self.params.targ_sens) 
+            else:
+                self.fluxes.alcroot  = 0.0
+                self.fluxes.albranch = 0.0
             
             self.fluxes.alstem = (1.0 - self.fluxes.alroot - 
                                         self.fluxes.albranch - 
                                         self.fluxes.alleaf -
                                         self.fluxes.alcroot)
             
-            
+            if self.control.alloc_model == "MAXIMIZEGPP":
+                self.fluxes.albranch = 0.1 *  self.fluxes.alstem
+                self.fluxes.alstem  -= self.fluxes.albranch
             # Because I have allowed the max fracs sum > 1, possibility
             # stem frac would be negative. Perhaps the above shouldn't be 
             # allowed...? But this will stop wood allocation in such a 

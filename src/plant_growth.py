@@ -434,7 +434,10 @@ class PlantGrowth(object):
             # height (m) 
             arg1 = self.state.sapwood * const.TONNES_AS_KG * const.M2_AS_HA
             arg2 = self.state.canht * self.params.density * self.params.cfracts
-            sap_cross_sec_area = arg1 / arg2
+            if arg2==0.0:  
+                sap_cross_sec_area=0.0
+            else :
+                sap_cross_sec_area = arg1 / arg2
             
             if not self.control.deciduous_model:
                 leaf2sap = self.state.lai / sap_cross_sec_area

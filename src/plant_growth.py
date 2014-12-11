@@ -300,19 +300,23 @@ class PlantGrowth(object):
             self.mt.calculate_photosynthesis(project_day, daylen)
         else:
             raise AttributeError('Unknown assimilation model')
+        self.fluxes.auto_resp = self.respirartion(project_day)
         
-        # Calculate plant respiration
-        if self.control.respiration_model == "FIXED":
-            # Plant respiration assuming carbon-use efficiency.
-            self.fluxes.auto_resp = self.fluxes.gpp * self.params.cue
-        elif self.control.respiration_model == "TEMPERATURE":
-            raise RuntimeError, "Not implemented yet" 
-        elif self.control.respiration_model == "BIOMASS":
-            raise RuntimeError, "Not implemented yet" 
         
         # Calculate NPP
         self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
         self.fluxes.npp = self.fluxes.npp_gCm2 * const.GRAM_C_2_TONNES_HA
+
+    def respirartion(self, project_day, gpp = None):
+        # Calculate plant respiration
+        if self.control.respiration_model == "FIXED":
+            # Plant respiration assuming carbon-use efficiency.
+            auto_resp = self.fluxes.gpp * self.params.cue
+        elif self.control.respiration_model == "TEMPERATURE":
+            auto_resp = gpp * self.params.cue * 
+                        0.08 **  self.met_data['tair'][project_day]/10  # Doug: need to stick Q10 in parameter list
+        elif self.control.respiration_model == "BIOMASS":
+            raise RuntimeError, "Not implemented yet" 
         
     def calc_carbon_allocation_fracs(self, nitfac):
         """Carbon allocation fractions to move photosynthate through the plant.

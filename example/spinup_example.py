@@ -63,7 +63,7 @@ def main(experiment_id, site, SPIN_UP=None):
                          "out_fname": "%s" % (out_fname),
                          
                          # control - using Fixed allocation coeffs
-                         "alloc_model": "fixed",
+                         "alloc_model": "maximizeGPP",
                          "assim_model": "mate",
                          "calc_sw_params": "true",   #false=use fwp values, true=derive them
                          "deciduous_model": "false",
@@ -78,6 +78,7 @@ def main(experiment_id, site, SPIN_UP=None):
                          "passiveconst": "false",
                          "print_options": "end",
                          "ps_pathway": "c3",
+                         "respiration_model": "TEMPERATURE",
                          "strfloat": "0",
                          "sw_stress_model": "1",  # Sands and Landsberg 
                          "trans_model": "1",

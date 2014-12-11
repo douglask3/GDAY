@@ -160,16 +160,21 @@ class MateC3(object):
             apar = 0.0
         else:
             # absorbed photosynthetically active radiation (umol m-2 s-1)
+
             apar = par * fipar
         apar_half_day = apar / 2.0
                 
         # convert umol m-2 d-1 -> gC m-2 d-1
         gpp_gCm2 = apar * lue_avg * const.UMOL_2_GRAMS_C
-        gpp_am = apar_half_day * lue_am * const.UMOL_2_GRAMS_C
-        gpp_pm = apar_half_day * lue_pm * const.UMOL_2_GRAMS_C
+        gpp_am   = apar_half_day * lue_am * const.UMOL_2_GRAMS_C
+        gpp_pm   = apar_half_day * lue_pm * const.UMOL_2_GRAMS_C
+        
+        if self.control.nuptake_model == 3:
+            gpp_gCm2 *= self.params.ac
+            gpp_am   *= self.params.ac
+            gpp_pm   *= self.params.ac
         
         return(apar,gpp_gCm2,gpp_am,gpp_pm)
-    
     
     def get_met_data(self, day):
         """ Grab the days met data out of the structure and return day values.

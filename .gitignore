@@ -9,7 +9,7 @@
 .vagrant/
 build/
 scratch/
-example/outputs/*		
+example/outputs
 
 src/_version.py
 

@@ -303,8 +303,11 @@ class PlantGrowth(object):
        
         # Estimate photosynthesis 
         if optimize:
-            return( self.mt.calculate_instant_photosynthesis(project_day, daylen,
-                                                             lai, fipar)[2], wtfac_root )
+            gpp = self.mt.calculate_instant_photosynthesis(project_day, daylen, lai, fipar)[2]
+            
+            npp = gpp - self.respirartion( gpp )
+            
+            return( npp, wtfac_root )
         else:
             self.state.ncontent         = ncontent
             self.state.fipar            = fipar
@@ -317,7 +320,29 @@ class PlantGrowth(object):
                 self.mt.calculate_photosynthesis(project_day, daylen,lai,fipar)
             else:
                 raise AttributeError('Unknown assimilation model')
+        
+        self.fluxes.auto_resp = self.respirartion()
+        
+        
+        # Calculate NPP
+        self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
+        self.fluxes.npp = self.fluxes.npp_gCm2 * const.GRAM_C_2_TONNES_HA
+
+    def respirartion(self, gpp = None):
+        # Calculate plant respiration
+        if gpp is None : gpp=self.fluxes.gpp
+
+        if self.control.respiration_model == "FIXED":
+            # Plant respiration assuming carbon-use efficiency.
+            auto_resp = gpp * self.params.cue
+        elif self.control.respiration_model == "TEMPERATURE":
     
+            raise RuntimeError, "Not implemented yet" 
+        elif self.control.respiration_model == "BIOMASS":
+            raise RuntimeError, "Not implemented yet" 
+    
+        return(auto_resp)
+        
     def calc_carbon_allocation_fracs(self, nitfac, project_day, daylen):
         """Carbon allocation fractions to move photosynthate through the plant.
 
@@ -462,7 +487,8 @@ class PlantGrowth(object):
             # stress
             #
             # calculate imbalance, based on *biomass*
-            mis_match = self.state.shoot / (self.state.root / stress)
+            mis_match = self.state.shoot / (self.state.root * stress)
+            
             # reduce leaf allocation fraction
             if mis_match > 1.0:
                 orig_af = self.fluxes.alleaf

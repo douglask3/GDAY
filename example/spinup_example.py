@@ -32,9 +32,9 @@ def main(experiment_id, site, SPIN_UP=None):
     # dir names
     base_param_name = "base_start"
     base_dir = os.getcwd()
-    param_dir = os.path.join(base_dir, "params")
-    met_dir = os.path.join(base_dir, "met_data")
-    run_dir = os.path.join(base_dir, "outputs")
+    param_dir    = "params"
+    met_dir      = "met_data"
+    run_dir      = "outputs"
     
     
     if SPIN_UP == True:
@@ -57,33 +57,33 @@ def main(experiment_id, site, SPIN_UP=None):
         
         replace_dict = { 
                          # files
-                         "out_param_fname": '"%s"' % (out_param_fname),
-                         "cfg_fname": '"%s"' % (cfg_fname),
-                         "met_fname": '"%s"' % (met_fname),
-                         "out_fname": '"%s"' % (out_fname),
+                         "out_param_fname": "%s" % (out_param_fname),
+                         "cfg_fname": "%s" % (cfg_fname),
+                         "met_fname": "%s" % (met_fname),
+                         "out_fname": "%s" % (out_fname),
                          
                          # control - using Fixed allocation coeffs
-                         "alloc_model": '"fixed"',
-                         "assim_model": '"mate"',
-                         "calc_sw_params": '"true"',   #false=use fwp values, true=derive them
-                         "deciduous_model": '"false"',
+                         "alloc_model": "fixed",
+                         "assim_model": "mate",
+                         "calc_sw_params": "true",   #false=use fwp values, true=derive them
+                         "deciduous_model": "false",
                          "disturbance": "0",
-                         "fixed_stem_nc": '"true"',
-                         "fixleafnc": '"false"',
-                         "grazing": '"false"',
-                         "gs_model": '"medlyn"',
-                         "model_optroot": '"false"',
-                         "modeljm": '"true"',
+                         "fixed_stem_nc": "true",
+                         "fixleafnc": "false",
+                         "grazing": "false",
+                         "gs_model": "medlyn",
+                         "model_optroot": "false",
+                         "modeljm": "true",
                          "nuptake_model": "1",
-                         "passiveconst": '"false"',
-                         "print_options": '"end"',
-                         "ps_pathway": '"c3"',
+                         "passiveconst": "false",
+                         "print_options": "end",
+                         "ps_pathway": "c3",
                          "strfloat": "0",
                          "sw_stress_model": "1",  # Sands and Landsberg 
                          "trans_model": "1",
                          "use_eff_nc": "0",
                          "use_leuning": "0",
-                         "water_stress": '"true"',
+                         "water_stress": "true",
                          
                          # state - default C:N 25.
                          "age": "0.0",
@@ -175,8 +175,8 @@ def main(experiment_id, site, SPIN_UP=None):
                          "ntheta_topsoil": "5.0",      # Derive based on soil type clay_loam
                          "ctheta_root": "0.4",         # Derive based on soil type clay
                          "ntheta_root": "3.0",         # Derive based on soil type clay
-                         "topsoil_type": '"clay_loam"',
-                         "rootsoil_type": '"clay"',
+                         "topsoil_type": "clay_loam",
+                         "rootsoil_type": "clay",
                          "measurement_temp": "25.0",
                          "dz0v_dh": "0.075", # However I have used value from Jarvis, quoted in Jones 1992, pg. 67. Produces a value within the bounds of 3.5-1.1 mol m-2 s-1 Drake, 2010, GCB for canht=17
                          "displace_ratio": "0.78",

@@ -305,7 +305,7 @@ class PlantGrowth(object):
         if optimize:
             gpp = self.mt.calculate_instant_photosynthesis(project_day, daylen, lai, fipar)[2]
             
-            npp = gpp - self.respirartion( gpp )
+            npp = gpp - self.respirartion(project_day, gpp )
             
             return( npp, wtfac_root )
         else:
@@ -321,14 +321,14 @@ class PlantGrowth(object):
             else:
                 raise AttributeError('Unknown assimilation model')
         
-        self.fluxes.auto_resp = self.respirartion()
+        self.fluxes.auto_resp = self.respirartion(project_day)
         
         
         # Calculate NPP
         self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
         self.fluxes.npp = self.fluxes.npp_gCm2 * const.GRAM_C_2_TONNES_HA
 
-    def respirartion(self, gpp = None):
+    def respirartion(self, project_day, gpp = None):
         # Calculate plant respiration
         if gpp is None : gpp=self.fluxes.gpp
 
@@ -336,8 +336,9 @@ class PlantGrowth(object):
             # Plant respiration assuming carbon-use efficiency.
             auto_resp = gpp * self.params.cue
         elif self.control.respiration_model == "TEMPERATURE":
-    
-            raise RuntimeError, "Not implemented yet" 
+            #import pdb; pdb.set_trace()
+            auto_resp = gpp * self.params.cue * 0.08 **  self.met_data['tair'][project_day]/10  # Doug: need to stick Q10 in parameter list
+            
         elif self.control.respiration_model == "BIOMASS":
             raise RuntimeError, "Not implemented yet" 
     

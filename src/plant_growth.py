@@ -315,8 +315,9 @@ class PlantGrowth(object):
             # Plant respiration assuming carbon-use efficiency.
             auto_resp = gpp * self.params.cue
         elif self.control.respiration_model == "TEMPERATURE":
-            auto_resp = gpp * self.params.cue * self.params.Q10 **  (self.met_data['tair'][project_day]/10)
-        elif self.control.respiration_model == "BIOMASS":
+            deltaTemp = self.met_data['tair'][project_day] - 10.0
+            auto_resp = gpp * self.params.cue * self.params.Q10 **  (deltaTemp / 10.0)
+        elif self.control.respiration_model == "BIOMASS": 
             raise RuntimeError, "Not implemented yet" 
         
         return(auto_resp)

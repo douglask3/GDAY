@@ -304,8 +304,8 @@ class PlantGrowth(object):
         
         
         # Calculate NPP
-        self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
-        self.fluxes.npp = self.fluxes.npp_gCm2 * const.GRAM_C_2_TONNES_HA
+        self.fluxes.npp = self.fluxes.gpp - self.fluxes.auto_resp
+        self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 / const.GRAM_C_2_TONNES_HA
 
     def respirartion(self, project_day, gpp = None):
         if gpp is None: gpp = self.fluxes.gpp
@@ -318,6 +318,8 @@ class PlantGrowth(object):
             auto_resp = gpp * self.params.cue * 0.08 **  self.met_data['tair'][project_day]/10  # Doug: need to stick Q10 in parameter list
         elif self.control.respiration_model == "BIOMASS":
             raise RuntimeError, "Not implemented yet" 
+        
+        return(auto_resp)
         
     def calc_carbon_allocation_fracs(self, nitfac):
         """Carbon allocation fractions to move photosynthate through the plant.

@@ -48,6 +48,7 @@ alpha_c4          = 0.06           # quantium efficiency for C4 plants has no Ci
 cfracts           = 0.5            # carbon fraction of dry biomass
 cue               = 0.5            # carbon use efficiency, or the ratio of NPP to GPP
 Q10               = 1.5            # the increase in Rm associated with a 10°C temperature increase
+r10               = 0.066          # Tissues respiration rate 10C (value for TrBE, TrBR from Sitch et al. 2003)
 delsj             = 644.4338       # Deactivation energy for electron transport (J mol-1 k-1)
 eac               = 79430.0        # Activation energy for carboxylation [J mol-1]
 eao               = 36380.0        # Activation energy for oxygenation [J mol-1]

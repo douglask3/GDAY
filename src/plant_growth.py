@@ -318,10 +318,31 @@ class PlantGrowth(object):
             deltaTemp = self.met_data['tair'][project_day] - 10.0
             auto_resp = gpp * self.params.cue * self.params.Q10 **  (deltaTemp / 10.0)
         elif self.control.respiration_model == "BIOMASS": 
-            raise RuntimeError, "Not implemented yet" 
-        
+            def arespFun(n, T, phen = 1):
+                return( self.params.r10 * n * phen * self.gT(T) )
+            
+            if ((self.state.leaf_out_days is None or self.state.leaf_out_days == 1) or
+               gpp > 0.0):
+                phen = 1.0
+            else:
+                phen=0.0
+            
+            auto_resp_leaf    = arespFun(self.state.shootn,
+                                         self.met_data['tsoil'][project_day],phen)
+            auto_resp_sapwood = arespFun(self.state.stemnmob,
+                                         self.met_data['tsoil'][project_day])
+            auto_resp_root    = arespFun(self.state.rootn, 
+                                         self.met_data['tsoil'][project_day],phen)
+            auto_resp         = auto_resp_leaf + auto_resp_sapwood + auto_resp_root
+            #import pdb; pdb.set_trace()
         return(auto_resp)
-        
+    
+    def gT(self, T):
+        a = 308.56
+        b = 1.0 / 56.02
+        c = 1.0 / (T + 46.02)
+        return( exp(a * (b - c)) )
+                
     def calc_carbon_allocation_fracs(self, nitfac):
         """Carbon allocation fractions to move photosynthate through the plant.
 

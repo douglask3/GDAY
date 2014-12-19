@@ -5,6 +5,7 @@
 *.dat
 *.txt
 *.png
+*.DS_Store
 .idea/
 .vagrant/
 build/

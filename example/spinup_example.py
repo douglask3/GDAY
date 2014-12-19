@@ -47,7 +47,7 @@ def main(experiment_id, site, SPIN_UP=None):
         # Run model to equilibrium assuming forest, growing C pools from 
         # effectively zero
         itag = "%s_%s_model_spinup" % (experiment_id, site)
-        otag = "%s_%s_model_spunup" % (experiment_id, site)
+        otag = "%s_%s_model_youngforest_spunup" % (experiment_id, site)
         mtag = "%s_met_data_equilibrium_50_yrs.csv" % (site)
         out_fn = itag + "_equilib.out" 
         out_param_fname = os.path.join(param_dir, otag + ".cfg")
@@ -61,7 +61,6 @@ def main(experiment_id, site, SPIN_UP=None):
                          "cfg_fname": "%s" % (cfg_fname),
                          "met_fname": "%s" % (met_fname),
                          "out_fname": "%s" % (out_fname),
-                         
                          # control - using Fixed allocation coeffs
                          "alloc_model": "fixed",
                          "assim_model": "mate",
@@ -74,7 +73,7 @@ def main(experiment_id, site, SPIN_UP=None):
                          "gs_model": "medlyn",
                          "model_optroot": "false",
                          "modeljm": "true",
-                         "nuptake_model": "1",
+                         "nuptake_model": "2",
                          "passiveconst": "false",
                          "print_options": "end",
                          "ps_pathway": "c3",
@@ -197,6 +196,7 @@ def main(experiment_id, site, SPIN_UP=None):
                          "targ_sens": "0.5",  
                          "density": "420.0",  
                         }
+                        
         ad.adjust_param_file(cfg_fname, replace_dict)
         G = model.Gday(cfg_fname, spin_up=True)
         G.spin_up_pools()

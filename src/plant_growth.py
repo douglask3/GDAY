@@ -329,22 +329,40 @@ class PlantGrowth(object):
         self.fluxes.npp = self.fluxes.npp_gCm2 * const.GRAM_C_2_TONNES_HA
 
     def respirartion(self, project_day, gpp = None):
-        # Calculate plant respiration
         if gpp is None : gpp=self.fluxes.gpp
 
         if self.control.respiration_model == "FIXED":
             # Plant respiration assuming carbon-use efficiency.
             auto_resp = gpp * self.params.cue
         elif self.control.respiration_model == "TEMPERATURE":
-            #import pdb; pdb.set_trace()
-            auto_resp = gpp * self.params.cue * 0.08 **  self.met_data['tair'][project_day]/10  # Doug: need to stick Q10 in parameter list
+            deltaTemp = self.met_data['tair'][project_day] - 10.0
+            auto_resp = gpp * self.params.cue * self.params.Q10 **  (deltaTemp / 10.0)
+        elif self.control.respiration_model == "BIOMASS": 
+            def arespFun(n, T, phen = 1):
+                return( self.params.r10 * n * phen * self.gT(T) )
             
-        elif self.control.respiration_model == "BIOMASS":
-            raise RuntimeError, "Not implemented yet" 
-    
+            if self.state.leaf_out_days is None or self.state.leaf_out_days == 1: 
+                phen = 1.0
+            else:
+                phen=0.0
+            
+            auto_resp_leaf    = arespFun(self.state.shootn,
+                                         self.met_data['tsoil'][project_day],phen)
+            auto_resp_sapwood = arespFun(self.state.stemnmob,
+                                         self.met_data['tsoil'][project_day])
+            auto_resp_root    = arespFun(self.state.rootn, 
+                                         self.met_data['tsoil'][project_day],phen)
+            auto_resp         = auto_resp_leaf + auto_resp_sapwood + auto_resp_root
+            #import pdb; pdb.set_trace()
         return(auto_resp)
-        
-    def calc_carbon_allocation_fracs(self, nitfac, project_day, daylen):
+    
+    def gT(self, T):
+        a = 308.56
+        b = 1.0 / 56.02
+        c = 1.0 / (T + 46.02)
+        return( exp(a * (b - c)) )
+                
+    def calc_carbon_allocation_fracs(self, nitfac):
         """Carbon allocation fractions to move photosynthate through the plant.
 
         Parameters:

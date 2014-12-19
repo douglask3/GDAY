@@ -321,8 +321,7 @@ class PlantGrowth(object):
             def arespFun(n, T, phen = 1):
                 return( self.params.r10 * n * phen * self.gT(T) )
             
-            if ((self.state.leaf_out_days is None or self.state.leaf_out_days == 1) or
-               gpp > 0.0):
+            if self.state.leaf_out_days is None or self.state.leaf_out_days == 1: 
                 phen = 1.0
             else:
                 phen=0.0

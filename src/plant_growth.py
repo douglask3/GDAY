@@ -122,7 +122,7 @@ class PlantGrowth(object):
         # figure out the C allocation fractions 
         if not self.control.deciduous_model:
             # daily allocation...
-            self.calc_carbon_allocation_fracs(nitfac)
+            self.calc_carbon_allocation_fracs(nitfac, project_day, daylen)
         else:
             # Allocation is annually for deciduous "tree" model, but we need to 
             # keep a check on stresses during the growing season and the LAI
@@ -140,7 +140,7 @@ class PlantGrowth(object):
                 if self.state.shoot > self.state.max_shoot:
                     self.state.max_shoot = self.state.shoot
                 
-                self.calc_carbon_allocation_fracs(nitfac)
+                self.calc_carbon_allocation_fracs(nitfac, project_day, daylen)
             
                 # store the days allocation fraction, we average these at the
                 # end of the year (for the growing season)
@@ -377,7 +377,7 @@ class PlantGrowth(object):
         c = 1.0 / (T + 46.02)
         return( exp(a * (b - c)) )
                 
-    def calc_carbon_allocation_fracs(self, nitfac):
+    def calc_carbon_allocation_fracs(self, nitfac, project_day, daylen):
         """Carbon allocation fractions to move photosynthate through the plant.
 
         Parameters:

@@ -143,10 +143,12 @@ rtslow = 0.0
 rexc_cue = 0.0
 
 # C allocated fracs - NB these are at the annual timestep for the deciduous model
-alleaf = 0.0
-alroot = 0.0
-albranch = 0.0
-alstem = 0.0
+alleaf = None
+alroot = None
+albranch = None
+alstem = None
+
+
 
 # Misc stuff
 cica_avg = None # used in water balance, only when running mate model

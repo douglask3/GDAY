@@ -122,7 +122,7 @@ class PlantGrowth(object):
         # figure out the C allocation fractions 
         if not self.control.deciduous_model:
             # daily allocation...
-            self.calc_carbon_allocation_fracs(nitfac, project_day, daylen)
+            self.calc_carbon_allocation_fracs(nitfac)
         else:
             # Allocation is annually for deciduous "tree" model, but we need to 
             # keep a check on stresses during the growing season and the LAI

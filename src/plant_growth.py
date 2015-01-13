@@ -188,6 +188,8 @@ class PlantGrowth(object):
             frac_to_rexc = max(0.0, min(0.5, (leaf_CN / presc_leaf_CN) - 1.0))
     
         self.fluxes.root_exc = frac_to_rexc * self.fluxes.cproot
+        
+        
         self.fluxes.root_exn = self.fluxes.root_exc * self.state.rootnc
     
         # Need to remove lost C & N from fine roots so that things balance.
@@ -517,14 +519,19 @@ class PlantGrowth(object):
             # Calculate adjustment on lr_max, based on current "stress"
             # calculated from running mean of N and water stress
             stress = lr_max * self.state.prev_sma
-             
+            
+            
             # calculate imbalance, based on *biomass*
             if not self.control.deciduous_model:
-                mis_match = self.state.shoot / (self.state.root * stress)
-            else:
+                # Catch for floating point reset of root C mass
+                if float_eq(self.state.root, 0.0):
+                    mis_match = 1.9
+                else:
+                    mis_match = self.state.shoot / (self.state.root * stress)
+            else:                              
                 mis_match = (self.state.max_shoot / 
                              (self.state.root * stress))
-                
+            
             # reduce leaf allocation fraction
             if mis_match > 1.0:
                 orig_af = self.fluxes.alleaf
@@ -541,7 +548,7 @@ class PlantGrowth(object):
                                          min(self.params.c_alloc_rmax, adj))
                 
                 reduction = max(0.0, orig_ar - self.fluxes.alroot)
-                self.fluxes.alleaf += reduction
+                self.fluxes.alleaf += max(self.params.c_alloc_fmax, reduction)
         
                   
             # Allocation to branch dependent on relationship between the stem
@@ -571,7 +578,7 @@ class PlantGrowth(object):
                     self.fluxes.alstem = 0.5 * left_over
                     self.fluxes.albranch = 0.5 * left_over
                 else:    
-                    self.fluxes.alcroot = 0.3 * leaf_over
+                    self.fluxes.alcroot = 0.3 * left_over
                     self.fluxes.alstem = 0.4 * left_over
                     self.fluxes.albranch = 0.3 * left_over
             
@@ -595,9 +602,11 @@ class PlantGrowth(object):
         else:
             raise AttributeError('Unknown C allocation model')
         
-        #print "*", self.fluxes.alleaf, \
+        
+        
+        #print self.fluxes.alleaf, \
         #          (self.fluxes.alstem + self.fluxes.albranch), \
-        #           self.fluxes.alroot
+        #           self.fluxes.alroot, self.fluxes.alcroot, self.state.shoot
         
         #if nitfac == 0.0:
         #    print "*", self.fluxes.alleaf, \

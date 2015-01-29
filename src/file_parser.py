@@ -14,7 +14,7 @@ import default_params as p
 import default_control as c
 import default_state as s
 import default_files as fi
-import default_fluxes
+import default_fluxes as default_fluxes
 import ConfigParser
 from utilities import str2boolean
 

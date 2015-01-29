@@ -174,9 +174,11 @@ class PlantGrowth(object):
         self.precision_control()
         
     def calc_root_exudation_release(self):
-        # Root exudation modelled to result from fine root growth
+        # Root exudation modelled to occur: with (1) fine root growth or (2)
+        # as a result of excess C. A fraction of fine root growth is allocated
+        # to stimulate exudation. This fraction increases with N stress.
     
-        if float_eq(self.state.shoot, 0.0):
+        if float_eq(self.state.shoot, 0.0) or float_eq(self.state.shootn, 0.0):
             # nothing happens during leaf off period
             leaf_CN = 0.0
             frac_to_rexc = 0.0
@@ -186,13 +188,16 @@ class PlantGrowth(object):
 
             # fraction varies between 0 and 50 % as a function of leaf CN
             frac_to_rexc = max(0.0, min(0.5, (leaf_CN / presc_leaf_CN) - 1.0))
-    
+            
         self.fluxes.root_exc = frac_to_rexc * self.fluxes.cproot
-        
-        
-        self.fluxes.root_exn = self.fluxes.root_exc * self.state.rootnc
+        if float_eq(self.fluxes.cproot, 0.0):
+            self.fluxes.root_exn = 0.0
+        else:
+            fine_root_NC = self.fluxes.nproot / self.fluxes.cproot
+            self.fluxes.root_exn = self.fluxes.root_exc * fine_root_NC
     
-        # Need to remove lost C & N from fine roots so that things balance.
+        # Need to exudation C & N fluxes from fine root growth fluxes so that 
+        # things balance.
         self.fluxes.cproot -= self.fluxes.root_exc
         self.fluxes.nproot -= self.fluxes.root_exn
         
@@ -724,8 +729,25 @@ class PlantGrowth(object):
                                        self.fluxes.alroot *
                                        self.params.ncrfac))
         self.state.n_to_alloc_root = ntot - self.state.n_to_alloc_shoot
+        """
+        
+        leaf_NC = self.state.n_to_alloc_shoot / self.state.c_to_alloc_shoot
+        if leaf_NC > 0.04:
+            self.state.n_to_alloc_shoot = self.state.c_to_alloc_shoot * 0.14
+        
+        self.state.n_to_alloc_root = ntot - self.state.n_to_alloc_shoot
         
         
+        root_NC = self.state.n_to_alloc_root / self.state.c_to_alloc_root
+        ncmaxr = 0.04 * self.params.ncrfac  # max root n:c
+        if root_NC > ncmaxr:
+            extrar = (self.state.n_to_alloc_root - 
+                      (self.state.c_to_alloc_root * ncmaxr))
+            
+            self.state.inorgn += extrar       
+            self.state.n_to_alloc_root -= extrar    
+        """
+           
     def nitrogen_allocation(self, ncbnew, nccnew, ncwimm, ncwnew, fdecay, 
                             rdecay, doy, days_in_yr, project_day, fsoilT):
         """ Nitrogen distribution - allocate available N through system.
@@ -761,11 +783,12 @@ class PlantGrowth(object):
         
         # If we are using the deciduous model, only take up N during the 
         # growing season
-        if self.control.deciduous_model:
-            if float_eq(self.state.leaf_out_days[doy], 0.0):
-                self.fluxes.nuptake = 0.0
+        #if self.control.deciduous_model:
+        #    if float_eq(self.state.leaf_out_days[doy], 0.0):
+        #        self.fluxes.nuptake = 0.0
         
         
+                
         
         # Ross's Root Model.
         if self.control.model_optroot == True:    
@@ -1015,8 +1038,8 @@ class PlantGrowth(object):
             # otherwise it is possible when growing from scratch we don't have
             # enough root mass to obtain N at the annual time step
             # I don't see an obvious better solution?
-            if self.control.deciduous_model:   
-                nuptake = max(U0 * self.state.root / (self.state.root + Kr), U0)
+            #if self.control.deciduous_model:   
+            #    nuptake = max(U0 * self.state.root / (self.state.root + Kr), U0)
             
             
         elif self.control.nuptake_model == 3:
@@ -1319,11 +1342,13 @@ class PlantGrowth(object):
         use in the following year to build new leaves (buds & budburst are 
         implied) 
         """
+        
         # Total C & N storage to allocate annually.
         self.state.cstore += self.fluxes.npp
         self.state.nstore += self.fluxes.nuptake + self.fluxes.retrans 
         self.state.anpp += self.fluxes.npp
-    
+        
+             
     def calculate_average_alloc_fractions(self, days):
         self.state.avg_alleaf /= float(days)
         self.state.avg_alroot /= float(days)
@@ -1337,50 +1362,7 @@ class PlantGrowth(object):
         self.fluxes.albranch = self.state.avg_albranch 
         self.fluxes.alstem = self.state.avg_alstem 
         
-    """
-    def enforce_sensible_nstore(self):
-        
     
-        
-        #============================
-        # Enforce maximum N:C ratios.
-        # ===========================    
-        # If foliage or root N/C exceeds its max, then N uptake is cut 
-        # back
-
-        # maximum leaf n:c ratio is function of stand age
-        #  - switch off age effect by setting ncmaxfyoung = ncmaxfold
-        age_effect = ((self.state.age - self.params.ageyoung) / 
-                      (self.params.ageold - self.params.ageyoung))
-
-        ncmaxf = (self.params.ncmaxfyoung - 
-                 (self.params.ncmaxfyoung - self.params.ncmaxfold) * 
-                  age_effect)
-        print self.state.inorgn, 
-        if float_lt(ncmaxf, self.params.ncmaxfold):
-            ncmaxf = self.params.ncmaxfold
-
-        if float_gt(ncmaxf, self.params.ncmaxfyoung):
-            ncmaxf = self.params.ncmaxfyoung
-        
-        if float_gt(self.state.n_to_alloc_shoot, (self.state.c_to_alloc_shoot * ncmaxf)):
-            extras = self.state.n_to_alloc_shoot - (self.state.c_to_alloc_shoot * ncmaxf)
-            
-            self.state.inorgn += extras #- loss
-            self.state.n_to_alloc_shoot -= extras
-        
-        
-        # if root N:C ratio exceeds its max, then nitrogen uptake is cut 
-        # back. n.b. new ring n/c max is already set because it is related 
-        # to leaf n:c
-        ncmaxr = ncmaxf * self.params.ncrfac  # max root n:c
-        if float_gt(self.state.n_to_alloc_root, (self.state.c_to_alloc_root * ncmaxr)):
-
-            extrar = self.state.n_to_alloc_root - (self.state.c_to_alloc_root * ncmaxr)
-            
-            self.state.inorgn += extrar 
-            self.state.n_to_alloc_root -= extrar
-    """        
  
 if __name__ == "__main__":
     

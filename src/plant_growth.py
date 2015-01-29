@@ -484,6 +484,7 @@ class PlantGrowth(object):
             
             # Calculate tree height: allometric reln using the power function 
             # (Causton, 1985)
+            if self.state.stem==0: self.state.stem=0.001
             self.state.canht = (self.params.heighto * 
                                 self.state.stem**self.params.htpower)
 
@@ -491,14 +492,19 @@ class PlantGrowth(object):
             # (dimensionless)
             # Assume it varies between LS0 and LS1 as a linear function of tree
             # height (m) 
+            
             arg1 = self.state.sapwood * const.TONNES_AS_KG * const.M2_AS_HA
             arg2 = self.state.canht * self.params.density * self.params.cfracts
-            if arg2==0.0:  
+            if arg2==0.0: 
+                import pdb; pdb.set_trace()
                 sap_cross_sec_area=0.0
+                self.state.lai = 0.0
             else :
                 sap_cross_sec_area = arg1 / arg2
             
-            if not self.control.deciduous_model:
+            if sap_cross_sec_area==0.0:
+                leaf2sap=0.0
+            elif not self.control.deciduous_model:
                 leaf2sap = self.state.lai / sap_cross_sec_area
             else:
                 leaf2sap = self.state.max_lai / sap_cross_sec_area

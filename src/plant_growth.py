@@ -529,13 +529,13 @@ class PlantGrowth(object):
                 arg3 = self.state.canht - self.params.height0
                 arg4 = self.params.height1 - self.params.height0
                 leaf2sa_target = arg1 + (arg2 * arg3 / arg4) 
-            
-            self.fluxes.alleaf = self.alloc_goal_seek(leaf2sap, leaf2sa_target, 
-                                                      self.params.c_alloc_fmax, 
-                                                      self.params.targ_sens) 
+            if self.control.alloc_model == "ALLOMETRIC":
+                self.fluxes.alleaf = self.alloc_goal_seek(leaf2sap, leaf2sa_target, 
+                                                          self.params.c_alloc_fmax, 
+                                                          self.params.targ_sens) 
             
             if self.control.alloc_model == "MAXIMIZEGPP":
-                # Use standard allocation as an initial guess
+                # Use yesterdays allocation as an initial guess
                 self.fluxes.alleaf = optimize.minimize(self.alloc_maximizeGPP,
                                                        self.fluxes.alleaf,
                                                        args=(project_day, daylen),

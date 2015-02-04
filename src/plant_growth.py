@@ -533,14 +533,14 @@ class PlantGrowth(object):
             self.fluxes.alleaf = self.alloc_goal_seek(leaf2sap, leaf2sa_target, 
                                                       self.params.c_alloc_fmax, 
                                                       self.params.targ_sens) 
-                                                      
+            
             if self.control.alloc_model == "MAXIMIZEGPP":
                 # Use standard allocation as an initial guess
                 self.fluxes.alleaf = optimize.minimize(self.alloc_maximizeGPP,
                                                        self.fluxes.alleaf,
                                                        args=(project_day, daylen),
                                                        bounds=((0,0.9),))['x'][0]
-                                                          
+                                                      
             # Maintain functional balance between leaf and root biomass
             #   e.g. -> Sitch et al. 2003, GCB.
             # assume root alloc = leaf alloc (derived from target) as starting
@@ -593,16 +593,15 @@ class PlantGrowth(object):
                 self.fluxes.alroot += (max(self.params.c_alloc_rmin, 
                                            orig_af - self.fluxes.alleaf))
             # reduce root allocation    
-            else:
+            elif mis_match < 1.0:
                 orig_ar = self.fluxes.alroot
                 adj = self.fluxes.alroot * mis_match
                 self.fluxes.alroot = max(self.params.c_alloc_rmin, 
                                          min(self.params.c_alloc_rmax, adj))
                 #self.fluxes.alleaf += orig_ar - self.fluxes.alroot
-            
                 
                 reduction = max(0.0, orig_ar - self.fluxes.alroot)
-                self.fluxes.alleaf += max(self.params.c_alloc_fmax, reduction)
+                self.fluxes.alleaf += min(self.params.c_alloc_fmax, reduction)
         
                   
             # Allocation to branch dependent on relationship between the stem
@@ -683,7 +682,6 @@ class PlantGrowth(object):
         #    print "*", self.fluxes.alleaf, \
         #              (self.fluxes.alstem + self.fluxes.albranch), \
         #               self.fluxes.alroot
-        
         
         # Total allocation should be one, if not print warning:
         total_alloc = (self.fluxes.alroot + self.fluxes.alleaf + 

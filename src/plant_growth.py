@@ -481,12 +481,6 @@ class PlantGrowth(object):
         elif (self.control.alloc_model == "ALLOMETRIC" or
              self.control.alloc_model == "MAXIMIZEGPP"):
             
-            #if not self.control.deciduous_model:
-            #    self.calculate_growth_stress_limitation()
-            #else:
-            #    # reset the buffer at the end of the growing season
-            #    self.sma.reset_stream()
-            
             # Calculate tree height: allometric reln using the power function 
             # (Causton, 1985)
             if self.state.stem==0: self.state.stem=0.001
@@ -501,7 +495,6 @@ class PlantGrowth(object):
             arg1 = self.state.sapwood * const.TONNES_AS_KG * const.M2_AS_HA
             arg2 = self.state.canht * self.params.density * self.params.cfracts
             if arg2==0.0: 
-                import pdb; pdb.set_trace()
                 sap_cross_sec_area=0.0
                 self.state.lai = 0.0
             else :

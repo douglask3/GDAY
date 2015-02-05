@@ -529,10 +529,9 @@ class PlantGrowth(object):
             
             if self.control.alloc_model == "MAXIMIZEGPP":
                 # Use yesterdays allocation as an initial guess
-                self.fluxes.alleaf = optimize.minimize(self.alloc_maximizeGPP,
-                                                       self.fluxes.alleaf,
-                                                       args=(project_day, daylen),
-                                                       bounds=((0,0.9),))['x'][0]
+                self.fluxes.alleaf = optimize.minimize_scalar(self.alloc_maximizeGPP,
+                                        args=(project_day, daylen),bounds=(0,0.9),
+                                        method='Bounded',tol=1E-2)['x']
                                                       
             # Maintain functional balance between leaf and root biomass
             #   e.g. -> Sitch et al. 2003, GCB.

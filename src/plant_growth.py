@@ -407,6 +407,7 @@ class PlantGrowth(object):
         McMurtrie, R. E. et al (2000) Plant and Soil, 224, 135-152.
         
         """
+        
         if self.control.alloc_model == "FIXED":
         
             self.fluxes.alleaf = (self.params.c_alloc_fmax + nitfac *
@@ -479,7 +480,8 @@ class PlantGrowth(object):
             self.fluxes.alleaf = (1.0 - self.fluxes.alroot)
             
         elif (self.control.alloc_model == "ALLOMETRIC" or
-             self.control.alloc_model == "MAXIMIZEGPP"):
+             self.control.alloc_model == "MAXIMIZEGPP" or
+             self.control.alloc_model == "MAXIMIZEWOOD"):
             
             # Calculate tree height: allometric reln using the power function 
             # (Causton, 1985)
@@ -533,8 +535,15 @@ class PlantGrowth(object):
                     # Use yesterdays allocation as an initial guess
                     self.fluxes.alleaf = optimize.minimize_scalar(self.alloc_maximizeGPP,
                                             args=(project_day, daylen, gpp0, wtfac_root0),
+                                            bounds=(0,0.9),method='Bounded',tol=1E-3)['x']
+                                       
+                if self.control.alloc_model =="MAXIMIZEWOOD":
+                    #Maximise wood allocation * GPP
+                    alwood = optimize.minimize_scalar(self.alloc_maximizeWood,
+                                            args=(project_day, daylen, gpp0, wtfac_root0),
                                             bounds=(0,0.9),method='Bounded',tol=1E-2)['x']
-                                              
+                    
+                                                 
             # Maintain functional balance between leaf and root biomass
             #   e.g. -> Sitch et al. 2003, GCB.
             # assume root alloc = leaf alloc (derived from target) as starting
@@ -615,6 +624,11 @@ class PlantGrowth(object):
                                                            coarse_root_target, 
                                                            self.params.c_alloc_cmax, 
                                                            self.params.targ_sens) 
+                                                           
+            elif self.control.alloc_model == "MAXIMIZEWOOD":
+                self.fluxes.alcroot  = 0.0
+                self.fluxes.albranch = 0.1 * alwood / 1.1
+                self.fluxes.alstem   = alwood / 1.1
             else:
                 self.fluxes.alcroot  = 0.0
                 self.fluxes.albranch = 0.0
@@ -643,6 +657,7 @@ class PlantGrowth(object):
             if self.control.alloc_model == "MAXIMIZEGPP":
                 self.fluxes.albranch = 0.1 *  self.fluxes.alstem
                 self.fluxes.alstem  -= self.fluxes.albranch
+            
             # Because I have allowed the max fracs sum > 1, possibility
             # stem frac would be negative. Perhaps the above shouldn't be 
             # allowed...? But this will stop wood allocation in such a 
@@ -695,8 +710,16 @@ class PlantGrowth(object):
         
         return( - (gpp))# * ( 1 - allFrac) ) )
         
+    def alloc_maximizeWood(self, alwood, project_day, daylen, gpp0, wtfac_root0):
         
-    
+        optimalLeaf = optimize.minimize_scalar(self.alloc_maximizeGPP,
+                                        args=(project_day, daylen, gpp0, wtfac_root0),
+                                        bounds=(0,0.9-alwood),method='Bounded',tol=1E-1)
+                                              
+        gpp    = - optimalLeaf['fun']
+        self.fluxes.alleaf = optimalLeaf['x']
+        return( - (gpp) * alwood )
+        
     def calculate_growth_stress_limitation(self):
         """ Calculate level of stress due to nitrogen or water availability """
         # calculate the N limitation based on available canopy N

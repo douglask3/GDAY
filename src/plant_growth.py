@@ -526,13 +526,15 @@ class PlantGrowth(object):
                 self.fluxes.alleaf = self.alloc_goal_seek(leaf2sap, leaf2sa_target, 
                                                           self.params.c_alloc_fmax, 
                                                           self.params.targ_sens) 
-            
-            if self.control.alloc_model == "MAXIMIZEGPP":
-                # Use yesterdays allocation as an initial guess
-                self.fluxes.alleaf = optimize.minimize_scalar(self.alloc_maximizeGPP,
-                                        args=(project_day, daylen),bounds=(0,0.9),
-                                        method='Bounded',tol=1E-2)['x']
-                                                      
+            else: 
+                (gpp0, wtfac_root0)  = self.carbon_production(project_day, daylen,self.state.lai,True)
+                
+                if self.control.alloc_model == "MAXIMIZEGPP":
+                    # Use yesterdays allocation as an initial guess
+                    self.fluxes.alleaf = optimize.minimize_scalar(self.alloc_maximizeGPP,
+                                            args=(project_day, daylen, gpp0, wtfac_root0),
+                                            bounds=(0,0.9),method='Bounded',tol=1E-2)['x']
+                                              
             # Maintain functional balance between leaf and root biomass
             #   e.g. -> Sitch et al. 2003, GCB.
             # assume root alloc = leaf alloc (derived from target) as starting
@@ -664,17 +666,6 @@ class PlantGrowth(object):
         else:
             raise AttributeError('Unknown C allocation model')
         
-        
-        
-        #print self.fluxes.alleaf, \
-        #          (self.fluxes.alstem + self.fluxes.albranch), \
-        #           self.fluxes.alroot, self.fluxes.alcroot, self.state.shoot
-        
-        #if nitfac == 0.0:
-        #    print "*", self.fluxes.alleaf, \
-        #              (self.fluxes.alstem + self.fluxes.albranch), \
-        #               self.fluxes.alroot
-        
         # Total allocation should be one, if not print warning:
         total_alloc = (self.fluxes.alroot + self.fluxes.alleaf + 
                        self.fluxes.albranch + self.fluxes.alstem + 
@@ -692,9 +683,8 @@ class PlantGrowth(object):
         
         return max(0.0, alloc_max * min(1.0, frac))    
     
-    def alloc_maximizeGPP(self, allFrac, project_day, daylen):
+    def alloc_maximizeGPP(self, allFrac, project_day, daylen, gpp0, wtfac_root0):
         
-        (gpp0, wtfac_root0)  = self.carbon_production(project_day, daylen,self.state.lai,True)
         cIncr = self.fluxes.npp * allFrac
         lai   = self.state.lai + self.leafIncrement(cIncr)
         
@@ -704,6 +694,7 @@ class PlantGrowth(object):
         if wtfac_root != wtfac_root0: gpp=0
         
         return( - (gpp))# * ( 1 - allFrac) ) )
+        
         
     
     def calculate_growth_stress_limitation(self):

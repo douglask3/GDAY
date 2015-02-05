@@ -143,7 +143,7 @@ rtslow = 0.0
 rexc_cue = 0.0
 
 # C allocated fracs - NB these are at the annual timestep for the deciduous model
-alleaf = None
+alleaf = 0.3
 alroot = None
 albranch = None
 alstem = None

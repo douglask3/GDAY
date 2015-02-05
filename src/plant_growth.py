@@ -708,7 +708,7 @@ class PlantGrowth(object):
         gpp  -= gpp0
         if wtfac_root != wtfac_root0: gpp=0
         
-        return( - (gpp))# * ( 1 - allFrac) ) )
+        return( - (gpp * ( 1 - allFrac) ) )
         
     def alloc_maximizeWood(self, alwood, project_day, daylen, gpp0, wtfac_root0):
         

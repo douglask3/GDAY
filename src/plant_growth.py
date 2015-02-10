@@ -86,8 +86,8 @@ class PlantGrowth(object):
         
         self.sma = SimpleMovingAverage(self.window_size, self.state.prev_sma)
         
-        self.smalloc.alleaf   = SimpleMovingAverage(7, self.fluxes.alleaf  )
-        self.smalloc.alwood = SimpleMovingAverage(7, self.fluxes.albranch  )
+        self.smaalleaf = SimpleMovingAverage(365, self.fluxes.alleaf  )
+        self.smaalwood = SimpleMovingAverage(365, self.fluxes.albranch  )
         
         self.check_max_NC = True
         
@@ -540,14 +540,15 @@ class PlantGrowth(object):
                                             args=(project_day, daylen, gpp0, wtfac_root0),
                                             bounds=(0,0.9),method='Bounded',tol=1E-3)['x']
                                             
-                    self.fluxes.alleaf = self.smalloc.alleaf(self.fluxes.alleaf)                   
+                    self.fluxes.alleaf = self.smaalleaf(alleaf)                   
                 if self.control.alloc_model =="MAXIMIZEWOOD":
                     #Maximise wood allocation * GPP
                     alwood = optimize.minimize_scalar(self.alloc_maximizeWood,
                                             args=(project_day, daylen, gpp0, wtfac_root0),
                                             bounds=(0,0.9),method='Bounded',tol=1E-2)['x']
                                             
-                    alwood= self.smalloc.alwood(alwood)
+                    alwood= self.smaalwood(alwood)
+                    self.fluxes.alleaf = self.smaalleaf(self.fluxes.alleaf)
             # Maintain functional balance between leaf and root biomass
             #   e.g. -> Sitch et al. 2003, GCB.
             # assume root alloc = leaf alloc (derived from target) as starting

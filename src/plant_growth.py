@@ -86,6 +86,9 @@ class PlantGrowth(object):
         
         self.sma = SimpleMovingAverage(self.window_size, self.state.prev_sma)
         
+        self.smalloc.alleaf   = SimpleMovingAverage(7, self.fluxes.alleaf  )
+        self.smalloc.alwood = SimpleMovingAverage(7, self.fluxes.albranch  )
+        
         self.check_max_NC = True
         
     def calc_day_growth(self, project_day, fdecay, rdecay, daylen, doy, 
@@ -525,7 +528,7 @@ class PlantGrowth(object):
                 arg4 = self.params.height1 - self.params.height0
                 leaf2sa_target = arg1 + (arg2 * arg3 / arg4) 
             if self.control.alloc_model == "ALLOMETRIC":
-                self.fluxes.alleaf = self.alloc_goal_seek(leaf2sap, leaf2sa_target, 
+                alleaf = self.alloc_goal_seek(leaf2sap, leaf2sa_target, 
                                                           self.params.c_alloc_fmax, 
                                                           self.params.targ_sens) 
             else: 
@@ -533,17 +536,18 @@ class PlantGrowth(object):
                 
                 if self.control.alloc_model == "MAXIMIZEGPP":
                     # Use yesterdays allocation as an initial guess
-                    self.fluxes.alleaf = optimize.minimize_scalar(self.alloc_maximizeGPP,
+                    alleaf = optimize.minimize_scalar(self.alloc_maximizeGPP,
                                             args=(project_day, daylen, gpp0, wtfac_root0),
                                             bounds=(0,0.9),method='Bounded',tol=1E-3)['x']
-                                       
+                                            
+                    self.fluxes.alleaf = self.smalloc.alleaf(self.fluxes.alleaf)                   
                 if self.control.alloc_model =="MAXIMIZEWOOD":
                     #Maximise wood allocation * GPP
                     alwood = optimize.minimize_scalar(self.alloc_maximizeWood,
                                             args=(project_day, daylen, gpp0, wtfac_root0),
                                             bounds=(0,0.9),method='Bounded',tol=1E-2)['x']
-                    
-                                                 
+                                            
+                    alwood= self.smalloc.alwood(alwood)
             # Maintain functional balance between leaf and root biomass
             #   e.g. -> Sitch et al. 2003, GCB.
             # assume root alloc = leaf alloc (derived from target) as starting
@@ -750,7 +754,6 @@ class PlantGrowth(object):
         # 0.1, following Zaehle et al. 2010 (supp), eqn 18.
         current_limitation = max(0.1, min(nlim, self.state.wtfac_root))
         self.state.prev_sma = self.sma(current_limitation)
-        
         
     def allocate_stored_c_and_n(self, init):
         """

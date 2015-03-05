@@ -192,14 +192,15 @@ class PlantGrowth(object):
 
             # fraction varies between 0 and 50 % as a function of leaf CN
             frac_to_rexc = max(0.0, min(0.5, (leaf_CN / presc_leaf_CN) - 1.0))
-            
+        
+        
         self.fluxes.root_exc = frac_to_rexc * self.fluxes.cproot
         if float_eq(self.fluxes.cproot, 0.0):
             self.fluxes.root_exn = 0.0
         else:
             fine_root_NC = self.fluxes.nproot / self.fluxes.cproot
             self.fluxes.root_exn = self.fluxes.root_exc * fine_root_NC
-    
+            
         # Need to exudation C & N fluxes from fine root growth fluxes so that 
         # things balance.
         self.fluxes.cproot -= self.fluxes.root_exc
@@ -440,8 +441,8 @@ class PlantGrowth(object):
             
             # if combining grasses with the deciduous model this calculation
             # is done only during the leaf out period. See above.
-            #if not self.control.deciduous_model:
-            #    self.calculate_growth_stress_limitation()
+            if not self.control.deciduous_model:
+                self.calculate_growth_stress_limitation()
             
             # First figure out root allocation given available water & nutrients
             # hyperbola shape to allocation
@@ -485,9 +486,13 @@ class PlantGrowth(object):
             self.fluxes.alcroot = 0.0
             self.fluxes.alleaf = (1.0 - self.fluxes.alroot)
             
+
         elif (self.control.alloc_model == "ALLOMETRIC" or
              self.control.alloc_model == "MAXIMIZEGPP" or
              self.control.alloc_model == "MAXIMIZEWOOD"):
+
+            if not self.control.deciduous_model:
+                self.calculate_growth_stress_limitation()
             
             # Calculate tree height: allometric reln using the power function 
             # (Causton, 1985)
@@ -613,7 +618,6 @@ class PlantGrowth(object):
                 
                 reduction = max(0.0, orig_ar - self.fluxes.alroot)
                 self.fluxes.alleaf += min(self.params.c_alloc_fmax, reduction)
-        
                   
             # Allocation to branch dependent on relationship between the stem
             # and branch
@@ -645,8 +649,6 @@ class PlantGrowth(object):
             # physical sense. In such a situation assume a bl
             left_over = (1.0 - self.fluxes.alroot - self.fluxes.alleaf)
             if (self.fluxes.albranch + self.fluxes.alcroot) > left_over:
-                self.fluxes.alstem = 0.4 * left_over
-                self.fluxes.albranch = 0.3 * left_over
                 if float_eq(self.state.croot, 0.0):
                     self.fluxes.alcroot = 0.0
                     self.fluxes.alstem = 0.5 * left_over

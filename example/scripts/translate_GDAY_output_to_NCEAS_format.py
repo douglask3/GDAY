@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 """ Translate GDAY output file 
-
 Match the NCEAS format and while we are at it carry out unit conversion so that 
 we matched required standard. Data should be comma-delimited
 """
@@ -62,7 +61,7 @@ def translate_output(infname, met_fname, binary=False):
     f.write("%s" % (git_ver))
     
     # write output in csv format
-    writer = csv.writer(f, dialect=csv.excel)
+    writer = csv.writer(f, dialect=csv.excel, lineterminator="\n")
     
     # write header for csv file
     writer.writerow(variable)
@@ -241,12 +240,12 @@ def load_gday_output(fname):
     co2_rel_from_passive_pool = out["co2_rel_from_passive_pool"] * tonnes_per_ha_to_g_m2
     
     # extra priming stuff
-    rexc = out["root_exc"] * tonnes_per_ha_to_g_m2
-    rexn = out["root_exn"] * tonnes_per_ha_to_g_m2
-    co2x = out["co2_released_exud"] * tonnes_per_ha_to_g_m2
-    factive = out["factive"] * tonnes_per_ha_to_g_m2
-    rtslow = out["rtslow"] * tonnes_per_ha_to_g_m2
-    rexcue = out["rexc_cue"] * tonnes_per_ha_to_g_m2
+    rexc = [UNDEF] * len(doy)
+    rexn = [UNDEF] * len(doy)
+    co2x = [UNDEF] * len(doy)
+    factive = [UNDEF] * len(doy)
+    rtslow = [UNDEF] * len(doy)
+    rexcue = [UNDEF] * len(doy)
     
    
     
@@ -456,15 +455,3 @@ if __name__ == "__main__":
     fname = "dk_fixco2_fixndep_forest_equilib.out"
     met_fname = "duke_equilibrium_metdata_fixndep_0.004_fixco2_270.gin"
     translate_output(fname, met_fname)
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    

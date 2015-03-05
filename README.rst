@@ -2,10 +2,9 @@
 GDAY model
 =============================================
 
-** NOTE discontinued, see the C version **
-
-GDAY (Generic Decomposition And Yield) is a simple, daily time step ecosystem model that represents carbon, nitrogen, and water dynamics at the stand scale. The model is coded entirely in `Python <http://www.python.org/>`_ without any dependancies. 
-
+GDAY (Generic Decomposition And Yield) is a simple, daily time step ecosystem model that represents carbon, nitrogen, and water dynamics at the stand scale. The model is coded entirely in C without any dependancies, unless you wish to use the optimal allocation routines (see below). The wrapper files
+for the example scripts and the script used to change GDAY parameter options,
+are written in python. The old python version is still `online <https://github.com/mdekauwe/pygday>`_.
 
 Key References
 ==============
@@ -14,49 +13,29 @@ Key References
 
 **Note** there are many subtle changes from those original papers included in the code.
 
+Dependancies
+=============
+If using the optimal allocation routines then you will need to build GDAY against the `GNU scientific libraries <http://www.gnu.org/software/gsl/>`_. Have a look at the Makefile, i.e. uncomment lines. Note you will have to set the appropriate path to the libraries on your machine.
 
 
 .. contents:: :local:
 
 Installation
 =============
-Setting up python on your system is very easy. For window or mac users the `Enthought <http://www.enthought.com/>`_ or `Anaconda <http://continuum.io/downloads>`_ python packages are perhaps your simplest avenue. On a Linux machine it is simply as case of using whatever your default package manager is, e.g. sudo apt-get install python2.7. If you are on a mac and don't want to use `Enthought <http://www.enthought.com/>`_ or `Anaconda <http://continuum.io/downloads>`_ then python comes as standard with your system, so infact you don't need to do anything! However, in my personal experience I've found that it is easier to set up your own separate working copy using a package manager such as `Macports <http://www.macports.org/>`_ or `Homebrew <http://brew.sh/>`_. I read that all the cool kids are now using the later, but personally I've had no issues with Macports. 
+There is a Makefile in the src directory... ::
 
-Once you have downloaded the source code, or clone the repository (go on...) there is a simple makefile, e.g. ::
+    $ make clean ; make 
 
-    sudo make install
 
-or the standard python approach ::
-
-    sudo python setup.py install
+I haven't done anything about an installation directory so you will need to move
+the executable yourself.
 
 Running the model
 =================
+A simple model usage can be displayed by calling GDAY as follows ::
 
-I need to add some simple scripts (on the todo list!). But within a python script you would require the following lines... ::
-    
-    from gday import gday as model
-    
-    G = model.Gday(cfg_fname, spin_up=True)
-    G.spin_up_pools()
+    $ gday -u
 
-which will spin the model up. Spin up expects a met forcing file with a 50 yrs of data, how you recycle this is up to you. The model automatically stops once the soil, plant and litter pools have reached equilibrium (check code for finer details).
-
-Changing the model default parameters for user defined ones is trivial and utilises a python dictionary, e.g. ::
-
-    from gday import adjust_gday_param_file as ad
-    
-    replace_dict = { "albedo": "0.123" }
-    ad.adjust_param_file(cfg_fname, replace_dict)
-
-And finally running the model... ::
-
-    from gday import gday as model
-    
-    G = model.Gday(cfg_fname)
-    G.run_sim()
-
-In all cases ``cfg_fname`` is simple a string with a link to the users parameter file, it can be named anything you please.
     
 Contacts
 ========

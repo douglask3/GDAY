@@ -3,25 +3,23 @@
 """ 
 Example script of how I would run the model, the result is not necessarily 
 sensible...but essentially the Duke experiment.
-
 * Note you don't need to change the parameter values this way, though I think
 it is preferable.
-
+This is a wrapper around the C code.
 """
 
 import os
 import sys
-
-# How to import G'day
-from gday import gday as model
-from gday import adjust_gday_param_file as ad
-from gday._version import __version__ as git_revision
+sys.path.append('../scripts')
+import adjust_gday_param_file as ad
 
 __author__  = "Martin De Kauwe"
-__version__ = "1.0 (11.02.2014)"
+__version__ = "1.0 (27.02.2015)"
 __email__   = "mdekauwe@gmail.com"
 
 def main(experiment_id, site, treatment, ascii=True):
+    
+    GDAY_EXE = "../src/gday -p "
     
     # --- FILE PATHS, DIR NAMES ETC --- #
     #base_dir = os.getcwd()
@@ -43,8 +41,6 @@ def main(experiment_id, site, treatment, ascii=True):
     out_fname = os.path.join(run_dir, out_fn)
     
     replace_dict = { 
-                         "git_hash": str(git_revision),
-                         
                          "out_param_fname": "%s" % (out_param_fname),
                          "cfg_fname": "%s" % (cfg_fname),
                          "met_fname": "%s" % (met_fname),
@@ -55,11 +51,11 @@ def main(experiment_id, site, treatment, ascii=True):
                          
                          
                          # control
-                         "alloc_model": "maximizeGPP",
+                         "alloc_model": "allometric",
                          "assim_model": "mate",
-                         "calc_sw_params": "1",   #0 uses fwp values, 1= derive them
+                         "calc_sw_params": "True",   #0 uses fwp values, 1= derive them
                          "deciduous_model": "false",
-                         "fixed_stem_nc": "1",
+                         "fixed_stem_nc": "true",
                          "fixleafnc": "false",
                          "grazing": "false",
                          "model_optroot": "false",
@@ -69,7 +65,7 @@ def main(experiment_id, site, treatment, ascii=True):
                          "passiveconst": "false",
                          "print_options": "daily",
                          "ps_pathway": "c3",
-                         "respiration_model": "TEMPERATURE",
+                         "respiration_model": "fixed",
                          "strfloat": "0",
                          "trans_model": "1",
                          "use_eff_nc": "0",
@@ -80,8 +76,7 @@ def main(experiment_id, site, treatment, ascii=True):
     ad.adjust_param_file(cfg_fname, replace_dict)
     
     # --- RUN THE MODEL --- #
-    G = model.Gday(cfg_fname)
-    G.run_sim()
+    os.system(GDAY_EXE + cfg_fname)
     
     # translate output to NCEAS style output
     

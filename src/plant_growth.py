@@ -353,7 +353,7 @@ class PlantGrowth(object):
 
     def respirartion(self, project_day, gpp = None):
         if gpp is None : gpp=self.fluxes.gpp
-
+        
         if self.control.respiration_model == "FIXED":
             # Plant respiration assuming carbon-use efficiency.
             auto_resp = gpp * self.params.cue
@@ -432,6 +432,9 @@ class PlantGrowth(object):
             
             self.fluxes.alcroot = self.params.c_alloc_cmax * self.fluxes.alstem
             self.fluxes.alstem -= self.fluxes.alcroot
+            
+            
+            
             
         elif self.control.alloc_model == "GRASSES":
             
@@ -691,7 +694,12 @@ class PlantGrowth(object):
                        self.fluxes.albranch + self.fluxes.alstem + 
                        self.fluxes.alcroot)
         if float_gt(total_alloc, 1.0):
-            raise RuntimeError, "Allocation fracs > 1" 
+            #raise RuntimeError, "Allocation fracs > 1" 
+            self.fluxes.alleaf=self.fluxes.alleaf/total_alloc
+            self.fluxes.alroot=self.fluxes.alroot/total_alloc
+            self.fluxes.albranch=self.fluxes.albranch/total_alloc
+            self.fluxes.alstem=self.fluxes.alstem/total_alloc
+            self.fluxes.alcroot=self.fluxes.alcroot/total_alloc
         
     def alloc_goal_seek(self, simulated, target, alloc_max, sensitivity):
         

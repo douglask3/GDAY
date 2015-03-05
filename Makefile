@@ -1,14 +1,15 @@
 # Mainly because I can't be bothered typing python setup blah
+compiler = python
 build:
-	python setup.py version
-	python setup.py build
-	python setup.py test
+	$(compiler) setup.py version
+	$(compiler) setup.py build
+	$(compiler) setup.py test
 install:
 	cat files.txt | xargs rm -rf
-	python setup.py version
-	python setup.py install --record files.txt
-	python setup.py test
+	$(compiler) setup.py version
+	$(compiler) setup.py install --record files.txt
+	$(compiler) setup.py test
 clean:
-	python setup.py clean 
+	$(compiler) setup.py clean 
 	cat files.txt | xargs rm -rf
 	

@@ -231,7 +231,7 @@ class Gday(object):
                 #print self.state.plantc, self.state.soilc
                 #print yr, doy, self.state.lai, self.fluxes.gpp*100
                 
-                
+                #print self.fluxes.gpp*100, self.state.prev_sma
                 # ======================= #
                 #   E N D   O F   D A Y   #
                 # ======================= #
@@ -660,8 +660,8 @@ def profile_main():
     prof = prof.runctx("main()", globals(), locals())
     print "<pre>"
     stats = pstats.Stats(prof)
-    stats.sort_stats("cumulative")  # Or cumulative
-    stats.print_stats(500)  # 80 = how many to prin
+    stats.sort_stats("cumulative")  
+    stats.print_stats(500)  
     # The rest is optional.
     # stats.print_callees()
     # stats.print_callers()
@@ -670,5 +670,5 @@ def profile_main():
 
 if __name__ == "__main__":
 
-    main()
-    #profile_main()
+    #main()
+    profile_main()

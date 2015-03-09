@@ -17,7 +17,8 @@
 
 
 void mate_C3_photosynthesis(control *c, fluxes *f, met *m, params *p, state *s,
-                            int project_day, double daylen, double ncontent) {
+                            int project_day, double daylen, double ncontent,
+                            double lai, double faipar) {
     /*
 
     MATE simulates big-leaf C3 photosynthesis (GPP) based on Sands (1995),
@@ -40,6 +41,45 @@ void mate_C3_photosynthesis(control *c, fluxes *f, met *m, params *p, state *s,
     * Medlyn et al. (2002) PCE, 25, 1167-1179, see pg. 1170.
 
     */
+    
+    double apar, gpp_gCm2, gpp_am, gpp_pm, apar
+    
+    calculate_instant_photosynthesis(c, f, m, p, s, project_day, daylen, ncontent,
+                                     lai, fipar)
+    
+    f->apar     = apar
+    f->gpp_gCm2 = gpp_gCm2
+    f->gpp_am   = gpp_am
+    f->gpp_pm   = gpp_pm
+    f->apar     = apar
+    
+    /* g C m-2 to tonnes hectare-1 day-1 */
+    f->gpp = f->gpp_gCm2 * G_AS_TONNES / M2_AS_HA;
+    
+    /*
++        self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
++        self.fluxes.gpp_am_pm = [self.fluxes.gpp_am, self.fluxes.gpp_pm]
++        
++        if self.control.nuptake_model == 3:
++            self.fluxes.gpp_gCm2 *= self.params.ac
++            self.fluxes.gpp_am *= self.params.ac
++            self.fluxes.gpp_pm *= self.params.ac
++            self.fluxes.npp_gCm2 = self.fluxes.gpp_gCm2 * self.params.cue
++            
++        # g C m-2 to tonnes hectare-1 day-1
++        self.fluxes.gpp = self.fluxes.gpp_gCm2 * const.GRAM_C_2_TONNES_HA
++        self.fluxes.npp = self.fluxes.npp_gCm2 * const.GRAM_C_2_TONNES_HA
++        
++        # Plant respiration assuming carbon-use efficiency.
++        self.fluxes.auto_resp = self.fluxes.gpp - self.fluxes.npp
+    */
+    return;
+}
+
+void calculate_instant_photosynthesis(control *c, fluxes *f, met *m, params *p, state *s,
+                            int project_day, double daylen, double ncontent,
+                            double lai, double faipar):
+                            
     double N0, Tk_am, Tk_pm, par, vpd_am, vpd_pm, ca, gamma_star_am,
            gamma_star_pm, Km_am, Km_pm, jmax_am, jmax_pm, vcmax_am, vcmax_pm,
            ci_am, ci_pm, alpha_am, alpha_pm, ac_am, ac_pm, aj_am, aj_pm,
@@ -49,9 +89,8 @@ void mate_C3_photosynthesis(control *c, fluxes *f, met *m, params *p, state *s,
     get_met_stuff(m, project_day, &Tk_am, &Tk_pm, &par, &vpd_am, &vpd_pm, &ca);
 
 
-
     /* Calculate mate params & account for temperature dependencies */
-    N0 = calculate_top_of_canopy_n(p, s, ncontent);
+    N0 = calculate_top_of_canopy_n(p, s, ncontent, lai);
 
     gamma_star_am = calculate_co2_compensation_point(p, Tk_am, mt);
     gamma_star_pm = calculate_co2_compensation_point(p, Tk_pm, mt);
@@ -88,20 +127,16 @@ void mate_C3_photosynthesis(control *c, fluxes *f, met *m, params *p, state *s,
     lue_avg = (lue_am + lue_pm) / 2.0;
 
     /* absorbed photosynthetically active radiation (umol m-2 s-1) */
-    if (float_eq(s->lai, 0.0))
-        f->apar = 0.0;
+    if (float_eq(lai, 0.0))
+        apar_half_day= 0.0;
     else
-        f->apar = par * s->fipar;
-    apar_half_day = f->apar / 2.0;
-
-
-    /* convert umol m-2 d-1 -> gC m-2 d-1 */
-    f->gpp_gCm2 = f->apar * lue_avg * UMOL_TO_MOL * MOL_C_TO_GRAMS_C;
-    f->gpp_am = apar_half_day * lue_am * UMOL_TO_MOL * MOL_C_TO_GRAMS_C;
-    f->gpp_pm = apar_half_day * lue_pm * UMOL_TO_MOL * MOL_C_TO_GRAMS_C;
-
-    /* g C m-2 to tonnes hectare-1 day-1 */
-    f->gpp = f->gpp_gCm2 * G_AS_TONNES / M2_AS_HA;
+        apar_half_day = par * fipar;
+    *apar = apar_half_day * 2.0;
+    
+        /* convert umol m-2 d-1 -> gC m-2 d-1 */
+    *gpp_gCm2 = f->apar * lue_avg * UMOL_TO_MOL * MOL_C_TO_GRAMS_C;
+    *gpp_am = apar_half_day * lue_am * UMOL_TO_MOL * MOL_C_TO_GRAMS_C;
+    *gpp_pm = apar_half_day * lue_pm * UMOL_TO_MOL * MOL_C_TO_GRAMS_C;
 
     return;
 }
@@ -142,7 +177,7 @@ void get_met_stuff(met *m, int project_day, double *Tk_am, double *Tk_pm,
     return;
 }
 
-double calculate_top_of_canopy_n(params *p, state *s, double ncontent)  {
+double calculate_top_of_canopy_n(params *p, state *s, double ncontent, double lai)  {
 
     /*
     Calculate the canopy N at the top of the canopy (g N m-2), N0.
@@ -155,9 +190,9 @@ double calculate_top_of_canopy_n(params *p, state *s, double ncontent)  {
     */
     double N0;
 
-    if (s->lai > 0.0) {
+    if (lai > 0.0) {
         /* calculation for canopy N content at the top of the canopy */
-        N0 = ncontent * p->kext / (1.0 - exp(-p->kext * s->lai));
+        N0 = ncontent * p->kext / (1.0 - exp(-p->kext * lai));
     } else {
         N0 = 0.0;
     }

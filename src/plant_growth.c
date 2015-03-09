@@ -162,7 +162,7 @@ void carbon_production(control *c, fluxes *f, met *m, params *p, state *s,
         exit(EXIT_FAILURE);
     } else if (c->assim_model == MATE) {
         mate_C3_photosynthesis(c, f, m, p, s, project_day, daylen,
-                               ncontent);
+                               ncontent, s->lai, s->fipar);
     } else {
         fprintf(stderr,"Unknown photosynthesis model'");
         exit(EXIT_FAILURE);
